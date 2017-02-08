@@ -1,0 +1,64 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>chatMe App</title>
+</head>
+<body>
+  <form id="sendForm">
+    <div id="chatPane"></div>
+    <input type="text" id="msg" autocomplete="off"/> <button type="submit">Send</button>
+  </form>
+
+  <script src="https://code.jquery.com/jquery-1.10.2.min.js"></script>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    // For Chat tab
+    var me;
+    var socket = io();
+    function display(text){
+      $('#chatPane').append(text+'<br/>')
+    }
+    function renderUsers(users){
+      let str = ''
+      for(let key in users) str += '<li>'+key+'</li>';
+      $('#chatUsers').html('Users:<br/><ul>'+str+'</ul>')
+    }
+    function initSocketEvents(){
+      socket.on('user joined', (data) => {
+        let {users, username} = data
+        renderUsers(users)
+        display('<strong>' + username + '</strong> joined')
+      });
+      
+      socket.on('user left', (data) => {
+        let {users, username} = data
+        renderUsers(users)
+        display('<strong>' + username + '</strong> lefted')
+      });
+      socket.on('login', (data) => {
+        let {users, username} = data
+        renderUsers(users)
+        display('Welcome <strong>' + username + '</strong>!')
+      });
+      socket.on('new message', (data) => {
+        display('<strong>' + data.username + '</strong>: ' + data.message)
+      });
+    }
+    function msgSubmitted(e){
+      e.preventDefault()
+      let msg = $('#msg').val()
+      $('#msg').val('')
+      socket.emit('new message', msg);
+      display('<strong>' + me + '</strong>: ' + msg)
+    }
+    $(function(){
+      me = prompt("Username", "");
+      $('#sendForm').on('submit', msgSubmitted)
+      initSocketEvents()
+      socket.emit('new user', me);
+    })
+  </script>
+</body>
+</html>
